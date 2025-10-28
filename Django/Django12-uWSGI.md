@@ -152,3 +152,8 @@
 
 - uWSGI为web服务器，是web server 和 web application 沟通的桥梁
 - 通信则需要标准，这个标准就是协议，uWSGI  服务器有很多种协议，而常用的协议就是uwsgi
+
+# 三、uwsgi 拒绝服务
+
+- [uwsgi拒绝服务](https://www.dytttf.com/2021/11/22/%E4%B8%80%E6%AC%A1uWSGI%E6%9C%8D%E5%8A%A1%E5%93%8D%E5%BA%94500%E6%8E%92%E6%9F%A5-worker%E5%8A%A0%E8%BD%BD%E9%9A%8F%E6%9C%BA%E5%A4%B1%E8%B4%A5/)
+

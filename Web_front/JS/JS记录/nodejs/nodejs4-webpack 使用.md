@@ -22,14 +22,14 @@
    ```
    javascript// src/index.js
    const message = "Hello, Webpack!";
-   console.log(message);
+   alert(message)
    ```
 
 4. **创建 Webpack 配置文件**：
    在项目根目录下创建一个名为 `webpack.config.js` 的文件，用于配置 Webpack 的打包规则和行为。一个简单的配置文件可能如下所示：
 
    ```
-   javascriptconst path = require('path');
+   const path = require('path');
    
    module.exports = {
      entry: './src/index.js',

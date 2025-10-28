@@ -97,7 +97,13 @@ int main() {
 
 # 四、std::packaged_task
 
-- packaged_task 的作用就是提供一个不同线程之间的数据同步机制，它可以存储一个函数操作，并将其返回值传递给对应的 future， 而这个 future 在另外一个线程中也可以安全地访问到这个值。
+- 在多线程编程中，`std::packaged_task` 是一个非常有用的工具，它能够把一个可调用对象（函数、lambda 表达式、绑定表达式或其它函数对象）封装成一个任务，这个任务可以在线程池中执行，并返回结果。
+
+  以下是使用 `std::packaged_task` 的几个关键原因：
+
+  1. **任务和结果的分离**： `std::packaged_task` 将任务和它的结果分离开来。你可以在线程中执行任务，而在另外的线程中获取任务的结果。
+  2. **与 `std::future` 结合使用**： 每个 `std::packaged_task` 对象都关联了一个 `std::future` 对象，这样可以方便地获取任务执行的结果或异常。
+  3. **任务的移动语义**： `std::packaged_task` 支持移动语义，这样可以避免不必要的拷贝，提高性能。
 
 ```c++
 #include <iostream>
@@ -148,6 +154,44 @@ int main()
     task_bind();
     task_thread();
 }
+
+
+
+// 更加直观的代码
+// 更加直观的代码
+// 更加直观的代码
+// 更加直观的代码
+
+#include <chrono>
+#include <future>
+#include <iostream>
+#include <thread>
+
+// 一个简单的函数，返回传入的整数值的平方
+int square(int x) {
+  std::this_thread::sleep_for(std::chrono::seconds(2));  // 模拟耗时操作
+  return x * x;
+}
+
+int main() {
+  // 创建一个 std::packaged_task 对象，并将 square 函数绑定到它
+  std::packaged_task<int(int)> task(square);
+
+  // 获取与任务关联的 future 对象
+  std::future<int> result = task.get_future();
+
+  // 在一个新的线程中执行任务
+  std::thread t(std::move(task), 5);
+
+  // 等待任务完成并获取结果
+  std::cout << "The square of 5 is " << result.get() << std::endl;
+
+  // 确保线程完成
+  t.join();
+
+  return 0;
+}
+
 
 ```
 

@@ -38,6 +38,42 @@
     test_result();
     return 0;
   }
+  
+  // 上述用法在c++17 中已经弃用
+  // 上述用法在c++17 中已经弃用
+  // 上述用法在c++17 中已经弃用
+  // 上述用法在c++17 中已经弃用
+  // 上述用法在c++17 中已经弃用
+  // 上述用法在c++17 中已经弃用
+  
+  
+  #include <iostream>
+  #include <functional>
+  #include <type_traits>
+  #include <typeinfo>
+  
+  void add(int x, double y) { 
+      // return x + static_cast<int>(y); 
+  }
+  
+  // 测试返回值结果推导
+  void test_result() {
+      // 使用 std::invoke_result 获取函数对象 add 调用后的返回类型
+    	// decltype 用于推导表达式的类型，它会返回该表达式的类型。例如：
+        // int x = 10;
+  			//decltype(x) y = 20; // y 的类型是 int
+      // decltype(add) 获取的是 add 函数的类型，然后 std::invoke_result 会使用这个类型来推导 add(int, double) 调用的返回类型
+      using result_type = std::invoke_result<decltype(add), int, double>::type;
+  
+      // 打印返回类型
+      std::cout << "Result type of add(int, double): " << typeid(result_type).name() << std::endl;
+  }
+  
+  int main() {
+      test_result();
+      return 0;
+  }
+  
   ```
-
+  
   

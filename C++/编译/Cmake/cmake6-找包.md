@@ -15,7 +15,7 @@ find_path(GFLAGS_INCLUDE_PATH gflags/gflags.h)
 # 2、暴漏头文件位置，#include 包含的时候可以省去前缀, include_directories 会暴露给接下来的所有项目(target_include_directories 只会暴露给当前项目)
 include_directories(${GFLAGS_INCLUDE_PATH})
 # 3、寻找库文件
-find_library(GFLAGS_LIBRARY NAMES gflags libgflags)
+CMAKE_LIBRARY_PATH(GFLAGS_LIBRARY NAMES gflags libgflags)
 # 几句哪些库的链接
 target_link_libraries(echo_server ${GFLAGS_LIBRARY})
 
@@ -114,7 +114,7 @@ target_link_libraries(echo_server ${GFLAGS_LIBRARY})
 
     
 
-  - testConfigVersion.cmake  : write_basic_package_version_file 吸入版本信息
+  - testConfigVersion.cmake  : write_basic_package_version_file 写入版本信息
 
   - testTargets.cmake  metricTargets-noconfig.cmake： install EXPORT 导出安装的
 

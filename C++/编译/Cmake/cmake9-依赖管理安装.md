@@ -96,9 +96,13 @@ target_link_libraries(MyExecutable my_external_lib)
 
 
 
+
+
 # 执行脚本的命令所放位置
 
 - 放在 BUILD_COMMAND 之中，放在INSTALL_COMMAND 下 会去调用make 导致错误
+
+
 
 # 为什么一些脚本命令放在其中行不通
 

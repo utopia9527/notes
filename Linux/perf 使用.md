@@ -1,0 +1,3 @@
+- 观测：perf record -p 1234
+- 查看：perf report
+- 查找：
