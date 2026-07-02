@@ -11,3 +11,13 @@
     ```
 
     
+  
+  - 永久设置(上述是临时)
+  
+  ```shell
+  sudo vim /etc/sysctl.conf
+  kernel.core_pattern=core.%e.%t.%p
+  sudo sysctl -p
+  ```
+  
+  

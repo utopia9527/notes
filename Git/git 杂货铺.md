@@ -77,3 +77,6 @@
 
   - ###  git diff branch1 branch2 --stat
 
+- 拉不到远程分支
+  - git fetch origin release:refs/remotes/origin/release 
+  - git checkout -b origin/release

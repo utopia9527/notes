@@ -101,22 +101,25 @@ target_link_libraries(echo_server ${GFLAGS_LIBRARY})
   - testConfig.cmake  : 根据手动写的testConfig.in 模板文件来的。在调用configure_package_config_file 时会进行变量替换
 
     ```cmake
-    
+    # 假设文件名称是： testConfig.cmake.in
     @PACKAGE_INIT@
     
     include(CMakeFindDependencyMacro)
     
-    set(TEST_INCLUDE_DIRS "@INSTALL_INCLUDE_DIR@") # 会进行变量替换
-    set(TEST_LIBRARIES test)
+    set(TEST_INCLUDE_DIRS "@INSTALL_INCLUDE_DIR@") # 会进行变量替换(CMake当中写的)
+    set(TEST_LIBRARIES "@TEST_LIB_PATH@") # 会进行变量替换(CMake当中写的)
     
     include("${CMAKE_CURRENT_LIST_DIR}/testTargets.cmake")
+    
+    # (在使用时，target_linK的名称就可以是 TEST_INCLUDE_DIRS、TEST_LIBRARIES
+    # find_package 的名称是test(根据testConfig.camke.in截断而来)# )
     ```
 
     
 
   - testConfigVersion.cmake  : write_basic_package_version_file 写入版本信息
 
-  - testTargets.cmake  metricTargets-noconfig.cmake： install EXPORT 导出安装的
+  - testTargets.cmake ： install EXPORT 导出安装的
 
 - 库文件、头文件安装
 

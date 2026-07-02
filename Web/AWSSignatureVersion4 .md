@@ -2,6 +2,8 @@
 
 AWS Signature Version 4 是一种用于对 AWS 请求进行身份验证的标准方式。在应用层面上，通常通过 HTTP 请求头中的 `Authorization` 字段来实现。下面是其格式及一个示例。
 
+官方文档： https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html
+
 # 二、Authrization Header 格式
 
 - 当使用 AWS Signature Version 4 时，`Authorization` 头的格式如下
@@ -174,3 +176,151 @@ Authorization: AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20231101/us-east-1/s3/aws
    - 将所有部分拼接成最终的 `Authorization` 头。
 
 请注意，这仅是一个演示，真实的签名需要确保时间戳准确以及所有域值都经过正确编码。同时，生产环境中应使用 AWS SDK 自动处理这些细节，而不是手动实施。AWS 提供的 SDK 会自动处理签名的生成过程。
+
+# 五、验证头C++ 代码
+
+```cpp
+// Helper functions for encoding and hashing
+std::string hmacSha256(const std::string &key, const std::string &message) {
+  unsigned char hash[EVP_MAX_MD_SIZE];
+  unsigned int len = 0;
+  HMAC(EVP_sha256(), key.data(), key.size(),
+       reinterpret_cast<const unsigned char *>(message.data()), message.size(),
+       hash, &len);
+  std::ostringstream oss;
+  for (unsigned int i = 0; i < len; i++) {
+    oss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
+  }
+  return oss.str();
+}
+
+std::string sha256(const std::string &input) {
+  unsigned char hash[SHA256_DIGEST_LENGTH];
+  SHA256(reinterpret_cast<const unsigned char *>(input.c_str()), input.size(),
+         hash);
+  std::ostringstream oss;
+  for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+    oss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
+  }
+  return oss.str();
+}
+
+std::string urlEncode(const std::string &value) {
+  std::ostringstream escaped;
+  escaped.fill('0');
+  escaped << std::hex;
+  for (char c : value) {
+    if (isalnum((unsigned char)c) || c == '-' || c == '_' || c == '.' ||
+        c == '~') {
+      escaped << c;
+    } else {
+      escaped << '%' << std::setw(2) << int((unsigned char)c);
+    }
+  }
+  return escaped.str();
+}
+
+// Generate the signing key
+std::string getSignatureKey(const std::string &secretKey,
+                            const std::string &dateStamp,
+                            const std::string &regionName,
+                            const std::string &serviceName) {
+  std::string kDate = hmacSha256("AWS4" + secretKey, dateStamp);
+  std::string kRegion = hmacSha256(kDate, regionName);
+  std::string kService = hmacSha256(kRegion, serviceName);
+  return hmacSha256(kService, "aws4_request");
+}
+
+// Generate the canonical request
+std::string createCanonicalRequest(const std::string &httpMethod,
+                                   const std::string &canonicalUri,
+                                   const std::string &canonicalQuerystring,
+                                   const std::string &canonicalHeaders,
+                                   const std::string &signedHeaders,
+                                   const std::string &payloadHash) {
+  std::ostringstream oss;
+  oss << httpMethod << "\n"
+      << canonicalUri << "\n"
+      << canonicalQuerystring << "\n"
+      << canonicalHeaders << "\n"
+      << signedHeaders << "\n"
+      << payloadHash;
+  return oss.str();
+}
+
+// Generate the string to sign
+std::string createStringToSign(const std::string &canonicalRequest,
+                               const std::string &timeStamp,
+                               const std::string &scope) {
+  std::string hashCanonicalRequest = sha256(canonicalRequest);
+  std::ostringstream oss;
+  oss << "AWS4-HMAC-SHA256\n"
+      << timeStamp << "\n"
+      << scope << "\n"
+      << hashCanonicalRequest;
+  return oss.str();
+}
+
+// Generate the authorization header
+std::string generateAuthorizationHeader(
+    const std::string &accessKey, const std::string &secretKey,
+    const std::string &region, const std::string &service,
+    const std::string &httpMethod, const std::string &uri,
+    const std::map<std::string, std::string> &queryParams,
+    const std::map<std::string, std::string> &headers,
+    const std::string &payload) {
+  // 1. Canonical Request
+  std::string canonicalUri = uri;  // 假定直接传入了标准化 URI
+  std::ostringstream queryStringStream;
+  for (const auto &[key, value] : queryParams) {
+    queryStringStream << urlEncode(key) << "=" << urlEncode(value) << "&";
+  }
+  std::string canonicalQuerystring = queryStringStream.str();
+  if (!canonicalQuerystring.empty())
+    canonicalQuerystring.pop_back();  // 移除末尾的 `&`
+
+  // Headers 排序
+  std::ostringstream canonicalHeadersStream, signedHeadersStream;
+  for (const auto &[key, value] : headers) {
+    canonicalHeadersStream << key << ":" << value << "\n";
+    signedHeadersStream << key << ";";
+  }
+  std::string canonicalHeaders = canonicalHeadersStream.str();
+  std::string signedHeaders = signedHeadersStream.str();
+  if (!signedHeaders.empty()) signedHeaders.pop_back();  // 移除末尾的 `;`
+
+  std::string payloadHash = sha256(payload);
+
+  std::string canonicalRequest =
+      createCanonicalRequest(httpMethod, canonicalUri, canonicalQuerystring,
+                             canonicalHeaders, signedHeaders, payloadHash);
+
+  // 2. String to Sign
+  std::string timeStamp = headers.at("x-amz-date");
+  std::string dateStamp = timeStamp.substr(0, 8);
+  std::string scope =
+      dateStamp + "/" + region + "/" + service + "/aws4_request";
+  std::string stringToSign =
+      createStringToSign(timeStamp, scope, canonicalRequest);
+
+  // 3. Signature
+  std::string signingKey =
+      getSignatureKey(secretKey, dateStamp, region, service);
+  std::string signature = hmacSha256(signingKey, stringToSign);
+
+  // 4. Authorization Header
+  std::ostringstream authHeaderStream;
+  authHeaderStream << "AWS4-HMAC-SHA256 Credential=" << accessKey << "/"
+                   << scope << ", SignedHeaders=" << signedHeaders
+                   << ", Signature=" << signature;
+
+  return authHeaderStream.str();
+}
+
+std::string getAmzDate() {
+  char buffer[17];
+  std::time_t now = std::time(nullptr);
+  std::strftime(buffer, sizeof(buffer), "%Y%m%dT%H%M%SZ", std::gmtime(&now));
+  return std::string(buffer);
+```
+
